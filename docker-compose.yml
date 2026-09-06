@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: enterprise_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - GROQ_API_KEY=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
+    volumes:
+      - ./chroma_db:/app/chroma_db
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: enterprise_frontend
+    ports:
+      - "8501:8501"
+    environment:
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      - backend
+    restart: unless-stopped

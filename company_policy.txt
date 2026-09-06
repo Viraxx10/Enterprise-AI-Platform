@@ -1,0 +1,34 @@
+================================================================================
+ENTERPRISE OPERATIONAL POLICIES & CUSTOMER LIFECYCLE GUIDELINES
+Document ID: POL-2026-V3
+Classification: Internal Operations
+================================================================================
+
+SECTION 1: CUSTOMER ONBOARDING AND ACCOUNT VERIFICATION
+All newly registered enterprise clients must complete Level-2 identity 
+verification within 14 calendar days of account provisioning. If verification 
+documents (such as corporate registration certificates and tax identification numbers) 
+are not validated within this window, the account is placed in "Restricted Tier" 
+with an outbound transfer cap of $5,000 USD per transaction.
+
+SECTION 2: DORMANT ACCOUNTS AND RETENTION ESCALATION
+Accounts showing zero user logins or transaction activity for 90 consecutive days 
+are classified as "Inactive". 
+1. Day 91: The system triggers an automated 3-part re-engagement email sequence offering a dedicated account manager review.
+2. Day 120: If no engagement occurs, monthly maintenance fees are suspended to protect user equity, and API access tokens are temporarily revoked.
+3. Day 180: Accounts with balances under $100 are scheduled for automatic closure following a final 30-day written notification via registered email.
+
+SECTION 3: DATA RETENTION AND PURGE COMPLIANCE
+User audit logs, transaction telemetry, and API query records must be preserved 
+in cold storage for exactly 7 years to meet global financial compliance standards. 
+After the 7-year mark, automated cryptographic erasure scripts permanently delete 
+the telemetry data from primary and backup clusters. Customers invoking the "Right 
+to be Forgotten" (GDPR Article 17) will have personal identifiable information (PII) 
+scrubbed within 30 business days, excluding immutable ledger transactions.
+
+SECTION 4: SLA GUARANTEES AND INCIDENT REPORTING
+The platform maintains an infrastructure uptime target of 99.95% excluding scheduled 
+weekend maintenance windows. For P1 (Critical Outage) incidents:
+- The incident response team must acknowledge alerts within 15 minutes.
+- Status updates must be posted to the public trust dashboard every 30 minutes.
+- Root Cause Analysis (RCA) documents must be delivered to enterprise tier customers within 5 business days of incident resolution.

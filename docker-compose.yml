@@ -9,7 +9,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - GROQ_API_KEY=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
+      - GROQ_API_KEY=${GROQ_API_KEY}
     volumes:
       - ./chroma_db:/app/chroma_db
     restart: unless-stopped

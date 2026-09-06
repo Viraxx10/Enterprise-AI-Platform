@@ -19,7 +19,12 @@ collection = chroma_client.get_or_create_collection(
 
 # 3. Initialize Groq LLM Client
 # PASTE YOUR ACTUAL GROQ KEY HERE IF NOT SET IN ENVIRONMENT:
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "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")
+# Before (INSECURE):
+# groq_client = Groq(api_key="gsk_xxxxxxxxxxxx...")
+
+# After (SECURE):
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+groq_client = Groq(api_key=GROQ_API_KEY)
 groq_client = None
 if GROQ_API_KEY and not GROQ_API_KEY.startswith("YOUR_GROQ"):
     try:

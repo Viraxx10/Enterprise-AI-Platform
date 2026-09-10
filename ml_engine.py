@@ -17,6 +17,19 @@ collection = chroma_client.get_or_create_collection(
     name="enterprise_knowledge", embedding_function=embedding_func
 )
 
+def purge_knowledge_base():
+    """Deletes all embeddings and resets the collection."""
+    global collection
+    try:
+        chroma_client.delete_collection(name="enterprise_knowledge")
+        collection = chroma_client.get_or_create_collection(
+            name="enterprise_knowledge", embedding_function=embedding_func
+        )
+        return True
+    except Exception as e:
+        print(f"Error purging collection: {e}")
+        return False
+
 # 3. Initialize Groq LLM Client
 # PASTE YOUR ACTUAL GROQ KEY HERE IF NOT SET IN ENVIRONMENT:
 # Before (INSECURE):
@@ -46,7 +59,10 @@ def predict_customer_churn(credit_score, age, tenure, balance, num_products):
     return risk_label, round(churn_prob * 100, 2)
 
 
-def search_knowledge_base(query: str, n_results: int = 2):
+def search_knowledge_base(query: str, n_results: int = 2, chat_history: list = None):
+    if chat_history is None:
+        chat_history = []
+
     # Step A: Vector Retrieval from ChromaDB
     try:
         results = collection.query(
@@ -77,7 +93,7 @@ def search_knowledge_base(query: str, n_results: int = 2):
             "sources": []
         }
 
-    # Step B: LLM Generation via Groq
+    # Step B: LLM Generation via Groq with Multi-Turn History
     if not groq_client:
         return {
             "answer": f"[Retrieved Context]: {retrieved_context}\n\n(Note: Groq client not active.)",
@@ -85,20 +101,24 @@ def search_knowledge_base(query: str, n_results: int = 2):
         }
 
     try:
-        prompt = f"""
-        You are an enterprise AI assistant. Answer the user question based ONLY on the following context.
+        system_prompt = (
+            "You are an enterprise AI assistant. Answer the user question based on the retrieved "
+            "context and the recent conversation history. If the answer cannot be found in the context, "
+            "explicitly state that you do not know."
+        )
 
-        Context:
-        {retrieved_context}
+        messages = [{"role": "system", "content": system_prompt}]
 
-        User Question: {query}
+        # Inject up to the last 6 messages (3 conversational turns)
+        for msg in chat_history[-6:]:
+            messages.append({"role": msg["role"], "content": msg["content"]})
 
-        Answer:
-        """
+        user_content = f"Retrieved Context:\n{retrieved_context}\n\nQuestion: {query}"
+        messages.append({"role": "user", "content": user_content})
 
         chat_completion = groq_client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
-            model="openai/gpt-oss-20b"
+            messages=messages,
+            model="llama-3.3-70b-versatile"
         )
         return {
             "answer": chat_completion.choices[0].message.content,
@@ -109,7 +129,7 @@ def search_knowledge_base(query: str, n_results: int = 2):
             "answer": f"Groq API Error: {str(e)}",
             "sources": sources
         }
-        
+                
 import uuid
 
 def ingest_document_text(text: str, filename: str, chunk_size: int = 1000, overlap: int = 100):

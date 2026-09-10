@@ -76,67 +76,69 @@ if page == "ML Customer Risk Predictor":
 
 # 2. AI KNOWLEDGE ASSISTANT (RAG)
 elif page == "AI Knowledge Assistant (RAG)":
-  st.subheader("🔍 Enterprise Knowledge Assistant")
+    st.subheader("🔍 Enterprise Knowledge Assistant")
 
-  # Dynamic Document Upload Section
-  st.markdown("#### 📂 Ingest Documents into ChromaDB")
-  uploaded_file = st.file_uploader(
-      "Upload a PDF or TXT policy document:", type=["pdf", "txt"]
-  )
+    # Dynamic Document Upload Section
+    st.markdown("#### 📂 Ingest Documents into ChromaDB")
+    uploaded_files = st.file_uploader(
+        "Upload Policy or Technical Documents (Batch Supported)", 
+        type=["txt", "pdf"], 
+        accept_multiple_files=True
+    )
 
-uploaded_files = st.file_uploader(
-    "Upload Policy or Technical Documents (Batch Supported)", 
-    type=["txt", "pdf"], 
-    accept_multiple_files=True
-)
-
-if uploaded_files and st.button("Ingest Documents", type="secondary"):
-    with st.spinner("Chunking text and generating vector embeddings..."):
-        for uploaded_file in uploaded_files:
-            try:
-                files = {"file": (uploaded_file.name, uploaded_file.getvalue())}
-                response = requests.post(f"{API_URL}/upload-doc", headers=HEADERS, files=files)
-                if response.status_code == 200:
-                    info = response.json()
-                    st.success(f"✅ Ingested `{info.get('filename')}` ({info.get('chunks_added', 0)} chunks added).")
-                else:
-                    st.error(f"Failed to ingest `{uploaded_file.name}`: {response.text}")
-            except Exception as e:
-                st.error(f"Upload error on `{uploaded_file.name}`: {e}")
-
-st.markdown("---")
-st.markdown("#### 💬 Ask Questions")
-query = st.text_input(
-    "Enter your question:",
-    placeholder="e.g., How do we handle accounts that are inactive for more than 90 days?",
-)
-
-if st.button("Submit Question", type="primary"):
-        if query.strip():
-            with st.spinner("Searching ChromaDB and synthesizing answer with Groq..."):
+    if uploaded_files and st.button("Ingest Documents", type="secondary"):
+        with st.spinner("Chunking text and generating vector embeddings..."):
+            for uploaded_file in uploaded_files:
                 try:
-                    response = requests.get(f"{API_URL}/search-docs", params={"query": query}, headers=HEADERS)
+                    files = {"file": (uploaded_file.name, uploaded_file.getvalue())}
+                    response = requests.post(f"{API_URL}/upload-doc", headers=HEADERS, files=files)
                     if response.status_code == 200:
-                        result = response.json()
-                        st.markdown("### Answer")
-                        st.info(result.get("answer", "No response received."))
-                        
-                        sources = result.get("sources", [])
-                        if sources:
-                            st.markdown("#### 📚 Reference Citations")
-                            for idx, src in enumerate(sources, start=1):
-                                with st.expander(f"Source {idx}: {src.get('document')} (Chunk {src.get('chunk_index')})"):
-                                    st.caption(f"**Extracted Text Snippet:**")
-                                    st.write(f"> {src.get('snippet')}")
-                        else:
-                            st.caption("No external source metadata available.")
+                        info = response.json()
+                        st.success(f"✅ Ingested `{info.get('filename')}` ({info.get('chunks_added', 0)} chunks added).")
                     else:
-                        st.error(f"Server returned error code: {response.status_code}")
-                except requests.exceptions.ConnectionError:
-                    st.error("⚠️ Connection Error: Ensure FastAPI server is running on http://127.0.0.1:8000")
-        else:
-            st.warning("Please type a question before submitting.")
-            
+                        st.error(f"Failed to ingest `{uploaded_file.name}`: {response.text}")
+                except Exception as e:
+                    st.error(f"Upload error on `{uploaded_file.name}`: {e}")
+
+    st.markdown("---")
+    st.markdown("#### 💬 Enterprise Q&A Assistant")
+
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+
+    col1, col2 = st.columns([6, 1])
+    with col2:
+        if st.button("🧹 Clear Chat"):
+            st.session_state.chat_history = []
+            st.rerun()
+
+    for message in st.session_state.chat_history:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    if prompt := st.chat_input("Ask a question based on uploaded policies..."):
+        st.session_state.chat_history.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        with st.chat_message("assistant"):
+            with st.spinner("Analyzing context and drafting response..."):
+                try:
+                    payload = {
+                        "query": prompt,
+                        "history": st.session_state.chat_history[:-1]
+                    }
+                    res = requests.post(f"{API_URL}/query", json=payload, headers=HEADERS)
+                    if res.status_code == 200:
+                        ans_data = res.json()
+                        bot_reply = ans_data.get("answer", "No answer received.")
+                        st.markdown(bot_reply)
+                        st.session_state.chat_history.append({"role": "assistant", "content": bot_reply})
+                    else:
+                        st.error(f"Error {res.status_code}: {res.text}")
+                except Exception as ex:
+                    st.error(f"Failed to connect to backend: {ex}")
+
 # --- SIDEBAR: Document Management ---
 st.sidebar.title("📚 Knowledge Base")
 

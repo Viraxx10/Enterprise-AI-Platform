@@ -2,11 +2,16 @@ import io
 import os
 from fastapi import FastAPI, File, UploadFile, Security, Depends, HTTPException, status, Request
 from fastapi.security import APIKeyHeader
-from pydantic import BaseModel
 from pypdf import PdfReader
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from typing import List, Dict, Optional
+from pydantic import BaseModel
+
+class RAGQueryRequest(BaseModel):
+    query: str
+    history: Optional[List[Dict[str, str]]] = []
 
 from ml_engine import (
     predict_customer_churn, 
@@ -60,12 +65,15 @@ def predict_churn(request: Request, data: ChurnRequest, key: str = Depends(verif
         data.balance,
         data.num_products
     )
-    return {"prediction": risk_label, "churn_probability": churn_prob}
+    return {"prediction": risk_label, "churn_probability": churn_prob} 
 
-@app.get("/search-docs")
+@app.post("/query")
 @limiter.limit("15/minute")
-def search_docs(request: Request, query: str, key: str = Depends(verify_api_key)):
-    return search_knowledge_base(query)
+def answer_query(request: Request, payload: RAGQueryRequest, key: str = Depends(verify_api_key)):
+    try:
+        return search_knowledge_base(payload.query, chat_history=payload.history)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/upload-doc")
 @limiter.limit("5/minute")

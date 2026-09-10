@@ -8,7 +8,13 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
-from ml_engine import predict_customer_churn, search_knowledge_base, ingest_document_text
+from ml_engine import (
+    predict_customer_churn, 
+    search_knowledge_base, 
+    ingest_document_text, 
+    get_knowledge_base_stats, 
+    purge_knowledge_base
+)
 
 # 1. Rate Limiting Setup
 limiter = Limiter(key_func=get_remote_address)
@@ -85,3 +91,14 @@ def upload_document(request: Request, file: UploadFile = File(...), key: str = D
         "filename": file.filename,
         "chunks_added": chunk_count
     }
+    
+@app.get("/kb-stats")
+def kb_stats(key: str = Depends(verify_api_key)):
+    return get_knowledge_base_stats()
+
+@app.delete("/purge-kb")
+def reset_kb(key: str = Depends(verify_api_key)):
+    success = purge_knowledge_base()
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to purge ChromaDB.")
+    return {"status": "success", "message": "Knowledge base purged successfully."}

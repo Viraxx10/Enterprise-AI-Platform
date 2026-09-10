@@ -84,38 +84,34 @@ elif page == "AI Knowledge Assistant (RAG)":
       "Upload a PDF or TXT policy document:", type=["pdf", "txt"]
   )
 
-  if uploaded_file is not None:
-    if st.button("Ingest Document", type="secondary"):
-      with st.spinner("Chunking text and generating vector embeddings..."):
-        try:
-          files = {
-              "file": (
-                  uploaded_file.name,
-                  uploaded_file.getvalue(),
-                  uploaded_file.type,
-              )
-          }
-          response = requests.post(f"{API_URL}/upload-doc", 
-             files={"file": (uploaded_file.name, uploaded_file.getvalue())},headers=HEADERS)
-          if response.status_code == 200:
-            info = response.json()
-            st.success(
-                f"✅ Successfully ingested `{info['filename']}`"
-                f" ({info['chunks_added']} chunks indexed)."
-            )
-          else:
-            st.error(f"Failed to ingest document. Code: {response.status_code}")
-        except Exception as e:
-          st.error(f"Upload error: {e}")
+uploaded_files = st.file_uploader(
+    "Upload Policy or Technical Documents (Batch Supported)", 
+    type=["txt", "pdf"], 
+    accept_multiple_files=True
+)
 
-  st.markdown("---")
-  st.markdown("#### 💬 Ask Questions")
-  query = st.text_input(
-      "Enter your question:",
-      placeholder="e.g., How do we handle accounts that are inactive for more than 90 days?",
-  )
+if uploaded_files and st.button("Ingest Documents", type="secondary"):
+    with st.spinner("Chunking text and generating vector embeddings..."):
+        for uploaded_file in uploaded_files:
+            try:
+                files = {"file": (uploaded_file.name, uploaded_file.getvalue())}
+                response = requests.post(f"{API_URL}/upload-doc", headers=HEADERS, files=files)
+                if response.status_code == 200:
+                    info = response.json()
+                    st.success(f"✅ Ingested `{info.get('filename')}` ({info.get('chunks_added', 0)} chunks added).")
+                else:
+                    st.error(f"Failed to ingest `{uploaded_file.name}`: {response.text}")
+            except Exception as e:
+                st.error(f"Upload error on `{uploaded_file.name}`: {e}")
 
-  if st.button("Submit Question", type="primary"):
+st.markdown("---")
+st.markdown("#### 💬 Ask Questions")
+query = st.text_input(
+    "Enter your question:",
+    placeholder="e.g., How do we handle accounts that are inactive for more than 90 days?",
+)
+
+if st.button("Submit Question", type="primary"):
         if query.strip():
             with st.spinner("Searching ChromaDB and synthesizing answer with Groq..."):
                 try:
@@ -140,3 +136,34 @@ elif page == "AI Knowledge Assistant (RAG)":
                     st.error("⚠️ Connection Error: Ensure FastAPI server is running on http://127.0.0.1:8000")
         else:
             st.warning("Please type a question before submitting.")
+            
+# --- SIDEBAR: Document Management ---
+st.sidebar.title("📚 Knowledge Base")
+
+if st.sidebar.button("🔄 Refresh Stats"):
+    st.rerun()
+
+try:
+    stats_res = requests.get(f"{API_URL}/kb-stats", headers=HEADERS)
+    if stats_res.status_code == 200:
+        stats = stats_res.json()
+        st.sidebar.metric("Total Chunks", stats.get("total_chunks", 0))
+        st.sidebar.caption("Indexed Files:")
+        docs = stats.get("documents", [])
+        if docs:
+            for doc in docs:
+                st.sidebar.markdown(f"- `{doc}`")
+        else:
+            st.sidebar.write("No documents indexed.")
+except Exception:
+    st.sidebar.error("Could not fetch KB stats.")
+
+st.sidebar.markdown("---")
+
+if st.sidebar.button("🗑️ Purge Knowledge Base", type="primary"):
+    purge_res = requests.delete(f"{API_URL}/purge-kb", headers=HEADERS)
+    if purge_res.status_code == 200:
+        st.sidebar.success("Database purged!")
+        st.rerun()
+    else:
+        st.sidebar.error("Purge failed.")

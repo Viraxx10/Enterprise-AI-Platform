@@ -137,3 +137,25 @@ def ingest_document_text(text: str, filename: str, chunk_size: int = 1000, overl
         metadatas=metadatas
     )
     return len(chunks)
+
+def get_knowledge_base_stats():
+    """Returns chunk count and unique document sources in ChromaDB."""
+    try:
+        data = collection.get()
+        count = len(data.get("ids", []))
+        metadatas = data.get("metadatas", []) or []
+        unique_sources = sorted(list({meta.get("source") for meta in metadatas if meta and "source" in meta}))
+        return {"total_chunks": count, "documents": unique_sources}
+    except Exception as e:
+        return {"total_chunks": 0, "documents": [], "error": str(e)}
+
+def purge_knowledge_base():
+    """Deletes all embeddings and resets the collection."""
+    global collection
+    try:
+        chroma_client.delete_collection(name="enterprise_knowledge_base")
+        collection = chroma_client.get_or_create_collection(name="enterprise_knowledge_base")
+        return True
+    except Exception as e:
+        print(f"Error purging collection: {e}")
+        return False

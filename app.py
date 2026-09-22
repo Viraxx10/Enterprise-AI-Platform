@@ -19,7 +19,7 @@ st.markdown(
 st.sidebar.header("Navigation")
 page = st.sidebar.radio(
     "Select Engine",
-    ["ML Customer Risk Predictor", "AI Knowledge Assistant (RAG)"],
+    ["ML Customer Risk Predictor", "AI Knowledge Assistant (RAG)", "Audit & System Logs"],
 )
 
 # 1. ML CUSTOMER RISK PREDICTOR
@@ -169,3 +169,26 @@ if st.sidebar.button("🗑️ Purge Knowledge Base", type="primary"):
         st.rerun()
     else:
         st.sidebar.error("Purge failed.")
+        
+# 3. AUDIT & SYSTEM LOGS
+elif page == "Audit & System Logs":
+    st.subheader("🛡️ Enterprise Audit & Request Logs")
+    st.caption("Live latency, route tracking, and status monitoring from FastAPI middleware.")
+
+    if st.button("🔄 Refresh Logs"):
+        st.rerun()
+
+    try:
+        log_res = requests.get(f"{API_URL}/audit-logs", headers=HEADERS)
+        if log_res.status_code == 200:
+            data = log_res.json()
+            st.metric("Total Logged Requests", data.get("total_records", 0))
+            logs = data.get("logs", [])
+            if logs:
+                st.dataframe(logs, use_container_width=True)
+            else:
+                st.info("No audit logs recorded yet.")
+        else:
+            st.error(f"Failed to fetch logs: {log_res.status_code}")
+    except Exception as e:
+        st.error(f"Could not connect to backend audit service: {e}")

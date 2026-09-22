@@ -8,6 +8,18 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from typing import List, Dict, Optional
 from pydantic import BaseModel
+import json
+import logging
+import time
+from datetime import datetime
+
+# Configure Structured Enterprise Logger
+logging.basicConfig(
+    filename="audit.log",
+    level=logging.INFO,
+    format="%(message)s"
+)
+audit_logger = logging.getLogger("audit")
 
 class RAGQueryRequest(BaseModel):
     query: str
@@ -110,3 +122,35 @@ def reset_kb(key: str = Depends(verify_api_key)):
     if not success:
         raise HTTPException(status_code=500, detail="Failed to purge ChromaDB.")
     return {"status": "success", "message": "Knowledge base purged successfully."}
+
+@app.middleware("http")
+async def audit_logging_middleware(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time_ms = round((time.time() - start_time) * 1000, 2)
+
+    log_entry = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "client_ip": request.client.host if request.client else "unknown",
+        "method": request.method,
+        "path": request.url.path,
+        "status_code": response.status_code,
+        "latency_ms": process_time_ms,
+    }
+
+    audit_logger.info(json.dumps(log_entry))
+    return response
+
+@app.get("/audit-logs")
+def fetch_audit_logs(key: str = Depends(verify_api_key)):
+    logs = []
+    if os.path.exists("audit.log"):
+        with open("audit.log", "r") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        logs.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        continue
+    return {"total_records": len(logs), "logs": logs[-50:]}

@@ -312,20 +312,18 @@ if selected_engine == "📊 ML Customer Risk Predictor":
 
     col_in1, col_in2 = st.columns(2)
     with col_in1:
-        st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-        st.markdown("<div class='card-title'>💳 Financial & Tenure Attributes</div>", unsafe_allow_html=True)
-        credit_score = st.slider("Credit Rating Score", min_value=300, max_value=850, value=default_credit, step=5, help="Standard credit rating score scale (300-850)")
-        age = st.slider("Customer Age", min_value=18, max_value=100, value=default_age, step=1)
-        tenure = st.slider("Relationship Tenure (Years)", min_value=0, max_value=10, value=default_tenure, step=1)
-        st.markdown("</div>", unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown("<div class='card-title'>💳 Financial & Tenure Attributes</div>", unsafe_allow_html=True)
+            credit_score = st.slider("Credit Rating Score", min_value=300, max_value=850, value=default_credit, step=5, help="Standard credit rating score scale (300-850)")
+            age = st.slider("Customer Age", min_value=18, max_value=100, value=default_age, step=1)
+            tenure = st.slider("Relationship Tenure (Years)", min_value=0, max_value=10, value=default_tenure, step=1)
 
     with col_in2:
-        st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-        st.markdown("<div class='card-title'>🏦 Portfolio & Product Metrics</div>", unsafe_allow_html=True)
-        balance = st.number_input("Account Balance (USD)", min_value=0.0, max_value=500000.0, value=default_balance, step=2500.0)
-        num_products = st.selectbox("Active Product Portfolio Size", options=[1, 2, 3, 4], index=default_products-1)
-        st.caption("Active subscriptions, cards, lines of credit, and investment accounts.")
-        st.markdown("</div>", unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown("<div class='card-title'>🏦 Portfolio & Product Metrics</div>", unsafe_allow_html=True)
+            balance = st.number_input("Account Balance (USD)", min_value=0.0, max_value=500000.0, value=default_balance, step=2500.0)
+            num_products = st.selectbox("Active Product Portfolio Size", options=[1, 2, 3, 4], index=default_products-1)
+            st.caption("Active subscriptions, cards, lines of credit, and investment accounts.")
 
     submit_btn = st.button("🚀 Run Live Risk Assessment", type="primary", use_container_width=True)
 

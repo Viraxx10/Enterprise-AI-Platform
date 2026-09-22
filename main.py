@@ -1,5 +1,9 @@
 import io
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from fastapi import FastAPI, File, UploadFile, Security, Depends, HTTPException, status, Request
 from fastapi.security import APIKeyHeader
 from pypdf import PdfReader
@@ -11,7 +15,85 @@ from pydantic import BaseModel
 import json
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+
+# 1. App & Rate Limiting Setup
+limiter = Limiter(key_func=get_remote_address)
+app = FastAPI(title="Enterprise AI Platform API")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# JWT Security Configurations
+SECRET_KEY = "SUPER_SECRET_JWT_KEY_CHANGE_IN_PRODUCTION"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+# Mock User Database (In production, load from PostgreSQL/SQLite)
+FAKE_USERS_DB = {
+    "admin": {
+        "username": "admin",
+        "hashed_password": pwd_context.hash("admin123"),
+        "role": "admin"
+    },
+    "user": {
+        "username": "user",
+        "hashed_password": pwd_context.hash("user123"),
+        "role": "standard"
+    }
+}
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        role: str = payload.get("role")
+        if username is None:
+            raise credentials_exception
+        return {"username": username, "role": role}
+    except JWTError:
+        raise credentials_exception
+
+def require_admin(current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required for this action."
+        )
+    return current_user
+
+@app.post("/token")
+def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = FAKE_USERS_DB.get(form_data.username)
+    if not user or not verify_password(form_data.password, user["hashed_password"]):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user["username"], "role": user["role"]}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer", "role": user["role"]}
 
 # Configure Structured Enterprise Logger
 logging.basicConfig(
@@ -32,12 +114,6 @@ from ml_engine import (
     get_knowledge_base_stats, 
     purge_knowledge_base
 )
-
-# 1. Rate Limiting Setup
-limiter = Limiter(key_func=get_remote_address)
-app = FastAPI(title="Enterprise AI Platform API")
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # 2. API Key Authentication Setup
 API_KEY_NAME = "X-API-Key"
@@ -117,11 +193,25 @@ def kb_stats(key: str = Depends(verify_api_key)):
     return get_knowledge_base_stats()
 
 @app.delete("/purge-kb")
-def reset_kb(key: str = Depends(verify_api_key)):
+def reset_kb(admin_user: dict = Depends(require_admin)):
     success = purge_knowledge_base()
     if not success:
         raise HTTPException(status_code=500, detail="Failed to purge ChromaDB.")
-    return {"status": "success", "message": "Knowledge base purged successfully."}
+    return {"status": "success", "message": f"Knowledge base purged by admin '{admin_user['username']}'."}
+
+@app.get("/audit-logs")
+def fetch_audit_logs(admin_user: dict = Depends(require_admin)):
+    logs = []
+    if os.path.exists("audit.log"):
+        with open("audit.log", "r") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        logs.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        continue
+    return {"total_records": len(logs), "logs": logs[-50:]}
 
 @app.middleware("http")
 async def audit_logging_middleware(request: Request, call_next):
@@ -140,17 +230,3 @@ async def audit_logging_middleware(request: Request, call_next):
 
     audit_logger.info(json.dumps(log_entry))
     return response
-
-@app.get("/audit-logs")
-def fetch_audit_logs(key: str = Depends(verify_api_key)):
-    logs = []
-    if os.path.exists("audit.log"):
-        with open("audit.log", "r") as f:
-            for line in f:
-                line = line.strip()
-                if line:
-                    try:
-                        logs.append(json.loads(line))
-                    except json.JSONDecodeError:
-                        continue
-    return {"total_records": len(logs), "logs": logs[-50:]}

@@ -6,7 +6,15 @@ import time
 
 
 def main():
-  python_exe = sys.executable
+  base_dir = os.path.dirname(os.path.abspath(__file__))
+  dot_venv = os.path.join(base_dir, ".venv", "Scripts", "python.exe")
+  venv = os.path.join(base_dir, "venv", "Scripts", "python.exe")
+  if os.path.exists(dot_venv):
+      python_exe = dot_venv
+  elif os.path.exists(venv):
+      python_exe = venv
+  else:
+      python_exe = sys.executable
 
   # 1. Start FastAPI backend (Port 8000)
   backend_cmd = [

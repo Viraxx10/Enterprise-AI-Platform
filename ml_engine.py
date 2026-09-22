@@ -30,14 +30,11 @@ def purge_knowledge_base():
         print(f"Error purging collection: {e}")
         return False
 
-# 3. Initialize Groq LLM Client
-# PASTE YOUR ACTUAL GROQ KEY HERE IF NOT SET IN ENVIRONMENT:
-# Before (INSECURE):
-# groq_client = Groq(api_key="gsk_xxxxxxxxxxxx...")
+from dotenv import load_dotenv
+load_dotenv()
 
-# After (SECURE):
+# 3. Initialize Groq LLM Client
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-groq_client = Groq(api_key=GROQ_API_KEY)
 groq_client = None
 if GROQ_API_KEY and not GROQ_API_KEY.startswith("YOUR_GROQ"):
     try:
@@ -168,14 +165,3 @@ def get_knowledge_base_stats():
         return {"total_chunks": count, "documents": unique_sources}
     except Exception as e:
         return {"total_chunks": 0, "documents": [], "error": str(e)}
-
-def purge_knowledge_base():
-    """Deletes all embeddings and resets the collection."""
-    global collection
-    try:
-        chroma_client.delete_collection(name="enterprise_knowledge_base")
-        collection = chroma_client.get_or_create_collection(name="enterprise_knowledge_base")
-        return True
-    except Exception as e:
-        print(f"Error purging collection: {e}")
-        return False

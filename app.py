@@ -253,31 +253,6 @@ with st.sidebar:
                 except Exception as ex:
                     st.error(f"Purge error: {ex}")
 
-# =====================================================================
-# 4. EXECUTIVE TOP BAR (AUTHENTICATED)
-# =====================================================================
-st.markdown("""
-    <div class="executive-header">
-        <div class="executive-title-group">
-            <h1>⚡ Enterprise AI Platform <span style="font-size: 0.95rem; background: rgba(99, 102, 241, 0.2); border: 1px solid #6366f1; border-radius: 9999px; padding: 0.2rem 0.65rem; color: #a5b4fc; font-weight: 600; -webkit-text-fill-color: initial;">v2.0 PROD</span></h1>
-            <div class="executive-subtitle">Unified Machine Learning & Retrieval-Augmented Generation Gateway</div>
-        </div>
-        <div class="telemetry-pill-group">
-            <div class="telemetry-pill">
-                <div class="pulse-dot"></div>
-                FastAPI: 8000 Online
-            </div>
-            <div class="telemetry-pill">
-                <div class="pulse-dot pulse-indigo"></div>
-                ChromaDB Vector Store
-            </div>
-            <div class="telemetry-pill">
-                <div class="pulse-dot"></div>
-                Groq LLaMA-3.3 70B
-            </div>
-        </div>
-    </div>
-""", unsafe_allow_html=True)
 
 # =====================================================================
 # 5. ENGINE 1: ML CUSTOMER RISK PREDICTOR

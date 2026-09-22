@@ -12,14 +12,8 @@ st.set_page_config(
     page_title="Enterprise AI Platform v2",
     page_icon="⚡",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed" if "token" not in st.session_state or not st.session_state.token else "expanded"
 )
-
-# Load External CSS Design System
-css_path = os.path.join(os.path.dirname(__file__), "style.css")
-if os.path.exists(css_path):
-    with open(css_path, "r", encoding="utf-8") as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 # Configuration & Environment Bindings
 API_URL = os.getenv("BACKEND_URL", os.getenv("API_URL", "http://127.0.0.1:8000"))
@@ -34,11 +28,140 @@ if "username" not in st.session_state:
     st.session_state.username = None
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
-if "last_query" not in st.session_state:
-    st.session_state.last_query = ""
+if "login_username_input" not in st.session_state:
+    st.session_state.login_username_input = "admin"
+if "login_password_input" not in st.session_state:
+    st.session_state.login_password_input = "admin123"
+
+# Load External CSS Design System
+css_path = os.path.join(os.path.dirname(__file__), "style.css")
+if os.path.exists(css_path):
+    with open(css_path, "r", encoding="utf-8") as f:
+        custom_css = f.read()
+        # If logged out, hide sidebar to make login dashboard full-width
+        if not st.session_state.token:
+            custom_css += """
+            section[data-testid="stSidebar"] {
+                display: none !important;
+            }
+            """
+        st.markdown(f"<style>{custom_css}</style>", unsafe_allow_html=True)
+
+# Helper function to perform login
+def perform_login(username, password):
+    try:
+        res = requests.post(
+            f"{API_URL}/token",
+            data={"username": username, "password": password},
+            timeout=5
+        )
+        if res.status_code == 200:
+            data = res.json()
+            st.session_state.token = data["access_token"]
+            st.session_state.role = data["role"]
+            st.session_state.username = username
+            st.rerun()
+        else:
+            st.error("Authentication failed: Invalid username or password.")
+    except Exception as e:
+        st.error(f"Cannot reach authentication gateway: {e}")
 
 # =====================================================================
-# 2. SIDEBAR ACCESS CONTROL & NAVIGATION
+# 2. LANDING / LOGIN DASHBOARD (WHEN LOGGED OUT)
+# =====================================================================
+if not st.session_state.token:
+    st.markdown("<div class='login-hero-container'>", unsafe_allow_html=True)
+    
+    col_hero, col_login = st.columns([1.15, 0.85], gap="large")
+
+    # LEFT COLUMN: PLATFORM SHOWCASE & CAPABILITIES
+    with col_hero:
+        st.markdown("""
+            <div class="login-hero-badge">⚡ Enterprise AI Platform • v2.0 Production</div>
+            <div class="login-hero-title">Autonomous AI Platform for Enterprise Operations</div>
+            <div class="login-hero-subtitle">
+                A unified, high-performance gateway integrating predictive machine learning,
+                semantic vector retrieval (RAG), and microsecond-level telemetry logging.
+            </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("""
+            <div class="feature-pill-card">
+                <div class="feature-icon-box">📊</div>
+                <div>
+                    <div class="feature-title">Predictive Customer Risk Engine</div>
+                    <div class="feature-desc">Random Forest classifier evaluating customer financial portfolios, assessing churn probability, and triggering automated retention protocols.</div>
+                </div>
+            </div>
+
+            <div class="feature-pill-card">
+                <div class="feature-icon-box">🔍</div>
+                <div>
+                    <div class="feature-title">Vector Knowledge Intelligence (RAG)</div>
+                    <div class="feature-desc">Persistent ChromaDB vector embeddings paired with Groq LLaMA-3.3 70B for grounded enterprise document synthesis with source citations.</div>
+                </div>
+            </div>
+
+            <div class="feature-pill-card">
+                <div class="feature-icon-box">🛡️</div>
+                <div>
+                    <div class="feature-title">Zero-Trust JWT Security & Audit Hub</div>
+                    <div class="feature-desc">Cryptographic OAuth2 bearer tokens, rate-limited endpoints, and ASGI middleware capturing real-time latency and request telemetry.</div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("""
+            <div class="telemetry-pill-group" style="margin-top: 1.5rem;">
+                <div class="telemetry-pill"><div class="pulse-dot"></div>FastAPI v0.141 Online</div>
+                <div class="telemetry-pill"><div class="pulse-dot pulse-indigo"></div>ChromaDB Vector Vault</div>
+                <div class="telemetry-pill"><div class="pulse-dot"></div>Groq LLaMA-3.3 Active</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    # RIGHT COLUMN: GLASSMORPHIC LOGIN CARD
+    with col_login:
+        st.markdown("""
+            <div class="login-form-card">
+                <div class="login-card-header">
+                    <div class="login-avatar-ring">🔐</div>
+                    <div class="login-card-title">Enterprise Gateway Sign-In</div>
+                    <div class="login-card-subtitle">Authenticate with corporate credentials to access model pipelines</div>
+                </div>
+        """, unsafe_allow_html=True)
+
+        user_input = st.text_input("Username", value=st.session_state.login_username_input, placeholder="Username", key="input_user")
+        pass_input = st.text_input("Password", value=st.session_state.login_password_input, type="password", placeholder="Password", key="input_pass")
+
+        if st.button("🚀 Authenticate to Platform", type="primary", use_container_width=True):
+            perform_login(user_input, pass_input)
+
+        st.markdown("<div style='margin: 1.25rem 0 0.5rem 0; font-size: 0.78rem; font-weight: 700; color: #94a3b8; text-transform: uppercase;'>Quick Demo Access:</div>", unsafe_allow_html=True)
+        col_demo1, col_demo2 = st.columns(2)
+        with col_demo1:
+            if st.button("👑 Sign In as Admin", type="secondary", use_container_width=True):
+                perform_login("admin", "admin123")
+        with col_demo2:
+            if st.button("👤 Sign In as User", type="secondary", use_container_width=True):
+                perform_login("user", "user123")
+
+        st.markdown("""
+                <div class="demo-account-box">
+                    <strong>Pre-configured Roles:</strong><br>
+                    • <code>admin</code> / <code>admin123</code> — Full Model, Vector & Audit Access<br>
+                    • <code>user</code> / <code>user123</code> — Standard Inference & Q&A
+                </div>
+                <div style="text-align: center; margin-top: 1rem; font-size: 0.74rem; color: #64748b;">
+                    🔒 Protected by Enterprise RSA-256 JWT • OAuth2 Bearer Standard
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.stop()
+
+# =====================================================================
+# 3. AUTHENTICATED USER: SIDEBAR
 # =====================================================================
 with st.sidebar:
     st.markdown("""
@@ -51,43 +174,6 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
 
-    # Authentication Gate
-    if not st.session_state.token:
-        st.markdown("### 🔐 Secure Login")
-        st.caption("Enter enterprise credentials to access model pipelines and knowledge services.")
-        
-        login_user = st.text_input("Username", value="admin", placeholder="e.g. admin or user")
-        login_pass = st.text_input("Password", value="admin123", type="password")
-        
-        if st.button("Authenticate", type="primary", use_container_width=True):
-            try:
-                res = requests.post(
-                    f"{API_URL}/token",
-                    data={"username": login_user, "password": login_pass},
-                    timeout=5
-                )
-                if res.status_code == 200:
-                    data = res.json()
-                    st.session_state.token = data["access_token"]
-                    st.session_state.role = data["role"]
-                    st.session_state.username = login_user
-                    st.success("Authentication verified.")
-                    st.rerun()
-                else:
-                    st.error("Invalid credentials provided.")
-            except Exception as e:
-                st.error(f"Gateway connection error: {e}")
-
-        st.markdown("""
-            <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 0.75rem; margin-top: 1rem; font-size: 0.76rem; color: #94a3b8;">
-                <strong>Demo Accounts:</strong><br>
-                • <code>admin</code> / <code>admin123</code> (Full Access)<br>
-                • <code>user</code> / <code>user123</code> (Standard)
-            </div>
-        """, unsafe_allow_html=True)
-        st.stop()
-
-    # Logged-in Profile Card
     role_badge_color = "#6366f1" if st.session_state.role == "admin" else "#06b6d4"
     st.markdown(f"""
         <div style="background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 0.85rem 1rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between;">
@@ -115,13 +201,11 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # Unified API Request Headers
     HEADERS = {
         "X-API-Key": API_KEY,
         "Authorization": f"Bearer {st.session_state.token}"
     }
 
-    # Navigation Engine Selector
     st.markdown("<div style='font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; margin-bottom: 0.5rem;'>Platform Engines</div>", unsafe_allow_html=True)
     nav_options = [
         "📊 ML Customer Risk Predictor",
@@ -132,7 +216,6 @@ with st.sidebar:
 
     selected_engine = st.radio("Navigation", nav_options, label_visibility="collapsed")
 
-    # Knowledge Base Telemetry Sidebar Widget
     st.markdown("---")
     st.markdown("<div style='font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; margin-bottom: 0.6rem;'>Vector Storage (ChromaDB)</div>", unsafe_allow_html=True)
     
@@ -153,7 +236,6 @@ with st.sidebar:
     except Exception:
         st.caption("Vector telemetry currently unavailable.")
 
-    # Admin DB Purge Safeguard
     if st.session_state.role == "admin":
         st.markdown("---")
         with st.expander("⚠️ Database Administration"):
@@ -172,7 +254,7 @@ with st.sidebar:
                     st.error(f"Purge error: {ex}")
 
 # =====================================================================
-# 3. EXECUTIVE TOP BAR & TELEMETRY
+# 4. EXECUTIVE TOP BAR (AUTHENTICATED)
 # =====================================================================
 st.markdown("""
     <div class="executive-header">
@@ -198,7 +280,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =====================================================================
-# 4. ENGINE 1: ML CUSTOMER RISK PREDICTOR
+# 5. ENGINE 1: ML CUSTOMER RISK PREDICTOR
 # =====================================================================
 if selected_engine == "📊 ML Customer Risk Predictor":
     st.markdown("""
@@ -208,7 +290,6 @@ if selected_engine == "📊 ML Customer Risk Predictor":
         </div>
     """, unsafe_allow_html=True)
 
-    # Quick Scenario Simulation Presets
     st.markdown("<div style='font-size: 0.8rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.5rem;'>Quick Simulation Profiles:</div>", unsafe_allow_html=True)
     c_p1, c_p2, c_p3 = st.columns(3)
     
@@ -223,7 +304,6 @@ if selected_engine == "📊 ML Customer Risk Predictor":
         if st.button("⏳ Inactive New Account", use_container_width=True):
             preset_data = {"credit": 620, "age": 28, "tenure": 1, "balance": 8000.0, "products": 3}
 
-    # Initialize form defaults
     default_credit = preset_data["credit"] if preset_data else 650
     default_age = preset_data["age"] if preset_data else 42
     default_tenure = preset_data["tenure"] if preset_data else 3
@@ -281,7 +361,6 @@ if selected_engine == "📊 ML Customer Risk Predictor":
                     </div>
                 """, unsafe_allow_html=True)
 
-                # Strategic Actionable Policy Insight (Cross-referenced with Vector Knowledge Base)
                 st.markdown("<div class='glass-card' style='margin-top: 1.5rem;'>", unsafe_allow_html=True)
                 st.markdown("<div class='card-title'>📋 Automated Strategic Protocol</div>", unsafe_allow_html=True)
                 
@@ -310,7 +389,7 @@ if selected_engine == "📊 ML Customer Risk Predictor":
             st.error(f"Prediction engine communication failed: {e}")
 
 # =====================================================================
-# 5. ENGINE 2: AI KNOWLEDGE ASSISTANT (RAG)
+# 6. ENGINE 2: AI KNOWLEDGE ASSISTANT (RAG)
 # =====================================================================
 elif selected_engine == "🔍 AI Knowledge Assistant (RAG)":
     st.markdown("""
@@ -320,7 +399,6 @@ elif selected_engine == "🔍 AI Knowledge Assistant (RAG)":
         </div>
     """, unsafe_allow_html=True)
 
-    # Document Ingestion Center Expandable Card
     with st.expander("📂 Ingest Internal Documents & Policy Knowledge", expanded=False):
         st.markdown("Upload compliance guidelines, standard operating procedures, or customer support SLAs (`.txt` or `.pdf`).")
         uploaded_files = st.file_uploader(
@@ -345,7 +423,6 @@ elif selected_engine == "🔍 AI Knowledge Assistant (RAG)":
                 progress_bar.progress((idx + 1) / total)
             st.rerun()
 
-    # Pre-built Prompt Suggestion Pills
     st.markdown("<div style='font-size: 0.8rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin: 1rem 0 0.5rem 0;'>Recommended Policy Inquiries:</div>", unsafe_allow_html=True)
     chip_col1, chip_col2, chip_col3, chip_col4 = st.columns(4)
     suggested_q = None
@@ -362,14 +439,12 @@ elif selected_engine == "🔍 AI Knowledge Assistant (RAG)":
         if st.button("Inactivity rules (>90 days)?", use_container_width=True):
             suggested_q = "What automated actions occur when an account is inactive for more than 90 days?"
 
-    # Conversation Hub & Controls
     col_chat_head1, col_chat_head2 = st.columns([5, 1])
     with col_chat_head2:
         if st.button("🧹 Clear Chat", use_container_width=True):
             st.session_state.chat_history = []
             st.rerun()
 
-    # Render Conversation Stream
     for msg in st.session_state.chat_history:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
@@ -386,7 +461,6 @@ elif selected_engine == "🔍 AI Knowledge Assistant (RAG)":
                             </div>
                         """, unsafe_allow_html=True)
 
-    # Handle Input via Chat Bar or Suggestion Chips
     user_prompt = st.chat_input("Ask any question regarding company policy, SLA, or churn criteria...")
     prompt_to_send = user_prompt or suggested_q
 
@@ -437,7 +511,7 @@ elif selected_engine == "🔍 AI Knowledge Assistant (RAG)":
                     st.error(f"Failed to query knowledge base: {ex}")
 
 # =====================================================================
-# 6. ENGINE 3: AUDIT & SYSTEM LOGS (ADMIN ONLY)
+# 7. ENGINE 3: AUDIT & SYSTEM LOGS (ADMIN ONLY)
 # =====================================================================
 elif selected_engine == "🛡️ Audit & System Logs":
     st.markdown("""
@@ -462,7 +536,6 @@ elif selected_engine == "🛡️ Audit & System Logs":
             if logs:
                 df = pd.DataFrame(logs)
                 
-                # KPI Summary Tiles
                 avg_latency = round(df["latency_ms"].mean(), 2) if "latency_ms" in df.columns else 0.0
                 success_count = (df["status_code"] < 400).sum() if "status_code" in df.columns else 0
                 success_rate = round((success_count / len(df)) * 100, 1) if len(df) > 0 else 100.0
@@ -487,7 +560,6 @@ elif selected_engine == "🛡️ Audit & System Logs":
                     </div>
                 """, unsafe_allow_html=True)
 
-                # Filter Controls
                 col_f1, col_f2 = st.columns([2, 1])
                 with col_f1:
                     search_path = st.text_input("Filter by Path substring", placeholder="e.g. /predict-churn or /query")

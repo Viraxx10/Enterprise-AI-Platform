@@ -7,12 +7,12 @@
 
 :root {
   --bg-primary: #07090e;
-  --bg-surface: rgba(15, 23, 42, 0.72);
+  --bg-surface: rgba(15, 23, 42, 0.75);
   --bg-surface-hover: rgba(30, 41, 59, 0.85);
-  --bg-surface-elevated: #111827;
+  --bg-surface-elevated: #0f172a;
   
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-glow: rgba(99, 102, 241, 0.28);
+  --border-subtle: rgba(255, 255, 255, 0.1);
+  --border-glow: rgba(99, 102, 241, 0.35);
   --border-active: #6366f1;
   
   --brand-primary: #6366f1;
@@ -24,21 +24,21 @@
   --text-dim: #64748b;
   
   --accent-success: #10b981;
-  --accent-success-bg: rgba(16, 185, 129, 0.12);
+  --accent-success-bg: rgba(16, 185, 129, 0.14);
   --accent-warning: #f59e0b;
-  --accent-warning-bg: rgba(245, 158, 11, 0.12);
+  --accent-warning-bg: rgba(245, 158, 11, 0.14);
   --accent-danger: #ef4444;
-  --accent-danger-bg: rgba(239, 68, 68, 0.12);
+  --accent-danger-bg: rgba(239, 68, 68, 0.14);
   --accent-info: #38bdf8;
-  --accent-info-bg: rgba(56, 189, 248, 0.12);
+  --accent-info-bg: rgba(56, 189, 248, 0.14);
   
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 20px;
   --radius-xl: 28px;
   
-  --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.6), 0 0 20px -5px rgba(99, 102, 241, 0.15);
-  --shadow-glow: 0 0 25px rgba(99, 102, 241, 0.35);
+  --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.7), 0 0 20px -5px rgba(99, 102, 241, 0.2);
+  --shadow-glow: 0 0 30px rgba(99, 102, 241, 0.4);
 }
 
 /* Global Font & Baseline Reset */
@@ -56,9 +56,9 @@ code, pre {
 .stApp {
   background-color: var(--bg-primary);
   background-image: 
-    radial-gradient(circle at 15% 10%, rgba(99, 102, 241, 0.12) 0%, transparent 45%),
-    radial-gradient(circle at 85% 85%, rgba(6, 182, 212, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.3) 0%, transparent 100%);
+    radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 90% 90%, rgba(6, 182, 212, 0.12) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.4) 0%, transparent 100%);
   background-attachment: fixed;
 }
 
@@ -67,9 +67,161 @@ header[data-testid="stHeader"] {
   background: transparent !important;
 }
 
-/* Top Executive Nav Header */
+/* ===================================================================
+   LOGIN PORTAL & LANDING DASHBOARD STYLING
+   =================================================================== */
+.login-hero-container {
+  padding: 1.5rem 0 3rem 0;
+}
+
+.login-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  border-radius: 9999px;
+  padding: 0.4rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #a5b4fc;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 1.25rem;
+}
+
+.login-hero-title {
+  font-size: 2.85rem !important;
+  font-weight: 800 !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.035em !important;
+  margin: 0 0 1rem 0 !important;
+  background: linear-gradient(135deg, #ffffff 30%, #a5b4fc 70%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.login-hero-subtitle {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: #94a3b8;
+  margin-bottom: 2rem;
+  max-width: 600px;
+}
+
+.feature-pill-card {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 1.15rem 1.4rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(12px);
+}
+
+.feature-pill-card:hover {
+  border-color: var(--border-glow);
+  background: rgba(30, 41, 59, 0.7);
+  transform: translateX(4px);
+}
+
+.feature-icon-box {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(6, 182, 212, 0.25));
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.feature-title {
+  font-weight: 700;
+  font-size: 0.98rem;
+  color: #f8fafc;
+  margin-bottom: 0.25rem;
+}
+
+.feature-desc {
+  font-size: 0.84rem;
+  color: #94a3b8;
+  line-height: 1.45;
+}
+
+/* Glassmorphic Login Form Card */
+.login-form-card {
+  background: linear-gradient(160deg, rgba(30, 41, 59, 0.75) 0%, rgba(15, 23, 42, 0.9) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  border-radius: var(--radius-lg);
+  padding: 2.25rem 2.5rem;
+  backdrop-filter: blur(24px);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.8), 0 0 35px -5px rgba(99, 102, 241, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.login-form-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--brand-gradient);
+}
+
+.login-card-header {
+  text-align: center;
+  margin-bottom: 1.75rem;
+}
+
+.login-avatar-ring {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #06b6d4);
+  margin: 0 auto 0.85rem auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+}
+
+.login-card-title {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.35rem;
+}
+
+.login-card-subtitle {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.demo-account-box {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 1rem;
+  margin-top: 1.25rem;
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+/* ===================================================================
+   AUTHENTICATED EXECUTIVE DASHBOARD
+   =================================================================== */
 .executive-header {
-  background: linear-gradient(135deg, rgba(17, 24, 39, 0.8) 0%, rgba(30, 41, 59, 0.5) 100%);
+  background: linear-gradient(135deg, rgba(17, 24, 39, 0.85) 0%, rgba(30, 41, 59, 0.6) 100%);
   border: 1px solid var(--border-glow);
   border-radius: var(--radius-lg);
   padding: 1.5rem 2rem;
@@ -112,7 +264,7 @@ header[data-testid="stHeader"] {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: rgba(15, 23, 42, 0.7);
+  background: rgba(15, 23, 42, 0.8);
   border: 1px solid var(--border-subtle);
   border-radius: 9999px;
   padding: 0.4rem 0.95rem;
@@ -193,7 +345,7 @@ header[data-testid="stHeader"] {
 }
 
 .kpi-card {
-  background: linear-gradient(145deg, rgba(30, 41, 59, 0.45) 0%, rgba(15, 23, 42, 0.7) 100%);
+  background: linear-gradient(145deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.75) 100%);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   padding: 1.25rem 1.4rem;
@@ -390,13 +542,17 @@ header[data-testid="stHeader"] {
   transform: translateY(-1px);
 }
 
-/* Streamlit Widget Customization */
-div[data-testid="stSidebar"] {
+/* Streamlit Sidebar Customization */
+section[data-testid="stSidebar"] {
   background-color: #0b0f19 !important;
   border-right: 1px solid var(--border-subtle) !important;
 }
 
-div[data-testid="stSidebar"] hr {
+section[data-testid="stSidebar"] [class*="st-"] {
+  color: var(--text-main) !important;
+}
+
+section[data-testid="stSidebar"] hr {
   border-color: var(--border-subtle) !important;
 }
 
@@ -418,15 +574,15 @@ button[kind="primary"] {
   background: var(--brand-gradient) !important;
   border: none !important;
   color: #ffffff !important;
-  font-weight: 600 !important;
+  font-weight: 700 !important;
   border-radius: var(--radius-sm) !important;
-  padding: 0.6rem 1.4rem !important;
+  padding: 0.65rem 1.5rem !important;
   box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4) !important;
   transition: all 0.2s ease !important;
 }
 
 button[kind="primary"]:hover {
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6) !important;
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.65) !important;
   transform: translateY(-1px) !important;
 }
 
@@ -435,7 +591,7 @@ button[kind="secondary"] {
   background: rgba(30, 41, 59, 0.8) !important;
   border: 1px solid var(--border-subtle) !important;
   color: var(--text-main) !important;
-  font-weight: 500 !important;
+  font-weight: 600 !important;
   border-radius: var(--radius-sm) !important;
   transition: all 0.2s ease !important;
 }

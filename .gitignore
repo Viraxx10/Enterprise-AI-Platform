@@ -6,3 +6,4 @@ __pycache__/
 error_log.txt
 .venv/
 chroma_db/
+audit.log
